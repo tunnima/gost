@@ -1,3 +1,150 @@
+# manuals:
+```text
+https://github.com/hiddify/hiddify-config/discussions/493
+https://github.com/woodlyer/gostExample
+https://github.com/go-gost/gost
+```
+## Install:
+```text
+snap install gost
+اجرا شدن به عنوان سرویس:
+which gost
+آخر فایل راهنمای زیر:
+https://github.com/woodlyer/gostExample
+بهبود بیشتر:
+https://freshman.tech/snippets/linux/auto-restart-systemd-service/
+```
+## As Service:
+### On DE:
+```text
+on DE:
+file: /lib/systemd/system/gost.service
+
+[Unit]
+Description=gost
+StartLimitIntervalSec=300
+StartLimitBurst=10
+After=network-online.target
+Wants=network-online.target systemd-networkd-wait-online.service
+
+[Service]
+Type=simple
+User=root
+Restart=on-failure
+RestartSec=2s
+#DynamicUser=true
+ExecStart=/snap/bin/gost -L dtls://:8899/:4422
+#ExecStart=/usr/bin/gost -C /etc/gost/config.json
+
+[Install]
+WantedBy=multi-user.target
+```
+### On IR:
+```text
+file1: /lib/systemd/system/gost.sh
+
+#!/bin/bash
+#while true
+#do
+ /snap/gost/539/bin/gost -L tcp://A.A.A.A:9040 -F forward+dtls://B.B.B.B:8899
+# sleep 10
+#done
+
+file2: /lib/systemd/system/gost.service
+
+[Unit]
+Description=gost
+StartLimitIntervalSec=300
+StartLimitBurst=10
+After=network-online.target
+Wants=network-online.target systemd-networkd-wait-online.service
+
+[Service]
+Type=simple
+User=root
+Restart=on-failure
+RestartSec=2s
+#DynamicUser=true
+ExecStart=/lib/systemd/system/gost.sh
+
+#ExecStart=/snap/bin/gost -L tcp://A.A.A.A:9040 -F forward+dtls://B.B.B.B:8899
+#StandardOutput=syslog
+#StandardError=syslog
+#ExecStart=/usr/bin/gost -C /etc/gost/config.json
+#SyslogIdentifier=%n
+
+[Install]
+WantedBy=multi-user.target
+```
+# Tests:
+```text
+yes
+gost -L kcp://:8899/:4445
+gost -L tcp://:9990  -F forward+kcp://B.B.B.B:8899
+
+yes
+gost -L wss://:8899/:4445
+gost -L tcp://:9990  -F forward+wss://B.B.B.B:8899
+
+yes
+gost -L mwss://:8899/:4445
+gost -L tcp://:9990  -F forward+mwss://B.B.B.B:8899
+
+
+yes for shadowsocks-libev
+gost -L tls://:8899/:4445
+gost -L tcp://:9990  -F forward+tls://B.B.B.B:8899
+
+yes for shadowsocks-libev
+gost -L dtls://:8899/:4445
+gost -L tcp://:9990  -F forward+dtls://B.B.B.B:8899
+
+no
+gost -L tls://:8899/:4445
+gost -L tcp://:9990  -F relay+tls://B.B.B.B:8899
+
+no
+gost -L dtls://:8899/:4445
+gost -L tcp://:9990  -F relay+dtls://B.B.B.B:8899
+
+???
+echo 1 > /proc/sys/net/ipv4/icmp_echo_ignore_all
+gost -L icmp://:0
+gost -L :9990 -F "relay+icmp://B.B.B.B:12345?keepAlive=true&ttl=10s"
+
+
+proxy mode:
+
+ok
+gost -L=kcp://:8899
+gost -L=:9990 -F=kcp://B.B.B.B:8899
+
+ok
+gost -L tls://:8899
+gost -L=:9990 -F tls://B.B.B.B:8899
+
+ok
+gost -L mtls://:8899
+gost -L=:9990 -F mtls://B.B.B.B:8899
+
+no
+gost -L=kcp://:8899?tcp=true
+gost -L=:9990 -F=kcp://B.B.B.B:8899?tcp=true
+
+gost remote port forward
+ok but too slow
+
+# server (iran) A.A.A.A
+gost -L kcp://:8899
+
+# client (DE)
+gost -L=rtcp://:9990/127.0.0.1:4445  -F=kcp://A.A.A.A:8899
+
+# ssh cmd
+ssh root@server_ip -p 2222
+```
+
+
 # GO Simple Tunnel
 
 ### GO语言实现的安全隧道
